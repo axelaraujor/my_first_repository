@@ -1,0 +1,3 @@
+## Esto es solo un archivo donde se reemplaza texto de mi codigo M de Power Query
+
+= Table.TransformColumnTypes(#"Navegación 1", {{"NroParte", type text}, {"Nomenclatura", type text}, {"Procedencia", type text}, {"Stock Minimo",type number}, {"Total", type number}, {"UM MGA", type text}, {"UM SAP", type text}, {"Stock SAP", type number}, {"Sobrante/Faltante", type number}, {"CodigoDeInspeccion", type text}, {"CodigoDeInspeccionFecha", type text}, {"CantidadPorInspeccion", type number}, {"Origen", type text}, {"AñoDeAnalisis", type number}, {"FechaDeAnalisis", type date}, {"Aeronave", type text}, {"NroOrdenAeronave", type number}, {"AeronaveTipoDeInspeccion", type text}, {"FechaDeActualizacion", type date}}, "es")
