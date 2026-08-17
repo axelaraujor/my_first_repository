@@ -1,0 +1,195 @@
+Sub AQuintaAplicacion()
+
+Dim i As Integer
+Dim j As Integer
+Dim n As Integer
+Dim m As Integer
+
+'Stock
+Dim StockMalvinas, StockNuevoMundo, StockLima, StockKiteni, StockTransferencias As String
+Dim Malvinas, NuevoMundo, Lima, Kiteni, Transferencias As String
+
+'Mensaje
+Dim Mensaje, MensajeFinal As String
+
+'Valores que nosotros insertamos
+Dim RespuestaStock, RazonStock, NumeroInvoice, AWB, ETA, CantidadInvoice, NumeroLinea, StockCuarentena, NombreContrato, NombreEspecificacion, NombreProveedor, FechaConfirmacion, FechaPago, FechaEspecificacion As String
+
+Do
+
+    n = InputBox("Insertar desde donde comenzar el llenado", "Variable n")
+    m = InputBox("Insertar hasta donde finalizar el llenado", "Variable m")
+    j = InputBox("Insertar donde insertar los comentarios", "Variable j")
+
+Loop While n > m Or n < 1
+
+    For i = n To m
+        
+        Cells(i, 2).Copy
+        Rows(i).Select
+        
+        RespuestaStock = MsgBox("¿Tenemos Stock?", vbYesNoCancel, "RespuestaStock")
+        
+        Select Case RespuestaStock
+            
+            Case vbYes
+                                   
+                StockMalvinas = InputBox("Cuantas unidades servibles hay en Malvinas?", "Malvinas")
+                
+                If StockMalvinas = "" Then
+                    MsgBox "Fin del procedimiento", vbCritical, "Final"
+                    Exit Sub
+                ElseIf StockMalvinas = "0" Then
+                    MsgBox "Omitimos Malvinas", vbExclamation, "Malvinas"
+                Else
+                    Malvinas = vbCrLf & StockMalvinas & " unidades servibles en Malvinas"
+                    Mensaje = Malvinas
+                End If
+            
+                StockNuevoMundo = InputBox("Cuantas unidades servibles hay en Nuevo Mundo?", "Nuevo Mundo")
+            
+                If StockNuevoMundo = "" Then
+                    MsgBox "Fin del procedimiento", vbCritical, "Final"
+                Exit Sub
+                ElseIf StockNuevoMundo = "0" Then
+                    MsgBox "Omitimos NuevoMundo", vbExclamation, "NuevoMundo"
+                Else
+                    NuevoMundo = vbCrLf & StockNuevoMundo & " unidades servibles en Nuevo Mundo"
+                    Mensaje = Mensaje & NuevoMundo
+                End If
+                
+                StockLima = InputBox("Cuantas unidades servibles hay en Callao y en MonteAzul?", "Lima")
+                
+                If StockLima = "" Then
+                    MsgBox "Fin del procedimiento", vbCritical, "Final"
+                    Exit Sub
+                ElseIf StockLima = "0" Then
+                    MsgBox "Omitimos Lima", vbExclamation, "Final"
+                Else
+                    Lima = vbCrLf & StockLima & " unidades servibles en Lima"
+                    Mensaje = Mensaje & Lima
+                End If
+              
+                StockKiteni = InputBox("Cuantas unidades servibles hay en Kiteni?", "Kiteni")
+                
+                If StockKiteni = "" Then
+                    MsgBox "Fin del procedimiento", vbCritical, "Final"
+                    Exit Sub
+                ElseIf StockKiteni = "0" Then
+                    MsgBox "Omitimos Kiteni", vbExclamation, "Final"
+                Else
+                    Kiteni = vbCrLf & StockKiteni & " unidades servibles en Kiteni"
+                    Mensaje = Mensaje & Kiteni
+                End If
+                
+                StockTransferencias = InputBox("Cuantas unidades servibles hay en Transferencias?", "Transferencias")
+                
+                If StockTransferencias = "" Then
+                    MsgBox "Fin del procedimiento", vbCritical, "Final"
+                    Exit Sub
+                ElseIf StockTransferencias = "0" Then
+                    MsgBox "Omitimos Transferencias", vbExclamation, "Final"
+                Else
+                    Transferencias = vbCrLf & StockTransferencias & " unidades en Transferencias"
+                    Mensaje = Mensaje & Transferencias
+                End If
+                
+                MensajeFinal = "Tenemos stock: " & Mensaje
+                
+                Cells(i, j).Value = MensajeFinal
+                
+                Mensaje = ""
+            
+            Case vbNo
+                 
+                '¿Etiqueta?
+
+PedirRazonStockMI:
+
+                RazonStock = InputBox("¿No hay Stock?" & vbCrLf & "(Que le decimos a los demas?)" & vbCrLf & vbCrLf & _
+                "(1) No hay Stock" & vbCrLf & _
+                "(2) Van a llegar, mediante el Siguiente Invoice: XXXXXX y AWB XXXXXXXXXXX" & vbCrLf & _
+                "(3) En proceso de pago a proveedor A por parte de Contabilidad, Invoice ##, desde el XX/XX/XXXX" & vbCrLf & _
+                "(4) Se confirmo la compra a proveedor A y cuenta con Anexo y Contrato, desde el XX/XX/XXXX" & vbCrLf & _
+                "(5) Hemos confirmado la compra al proveedor A desde el XX/XX/XXXX, pero no nos envian Anexo o Contrato" & vbCrLf & _
+                "(6) En cotizacion, aun no se ha definido la compra" & vbCrLf & _
+                "(7) Hay stock, pero en almacen Cuarentena", _
+                "RazonStock")
+
+                If RazonStock > 7 Or RazonStock < 1 Then
+                    MsgBox "¿Valor incorrecto? Por favor, intenta de nuevo.", vbQuestion, "Error"
+                    GoTo PedirRazonStockMI
+                End If
+                
+                If RazonStock = 1 Then
+                    
+                    MensajeFinal = "No hay Stock"
+                    Cells(i, j).Value = MensajeFinal
+                    MensajeFinal = ""
+                
+                ElseIf RazonStock = 2 Then
+                    
+                    NombreProveedor = InputBox("A que proveedor le hemos realizado el pago", "NombreProveedor")
+                    CantidadInvoice = InputBox("Cuantas unidades llegaran?", "CantidadInvoice")
+                    NumeroInvoice = InputBox("Inserta Numero de Invoice XXXXXX", "NumeroInvoice")
+                    ETA = InputBox("Inserta fecha estimada de llegada de estos componentes a Lima", "ETA")
+                    AWB = InputBox("Inserta numero de AWB", "AWB")
+                        
+                    MensajeFinal = "No hay stock" & vbCrLf & vbCrLf & "Pero llegaran " & CantidadInvoice & " unidades mediante:" & vbCrLf & "Proveedor: " & NombreProveedor & vbCrLf & "Invoice:" & NumeroInvoice & vbCrLf & "AWB: " & AWB & vbCrLf & "Fecha Estimada de Llegada: " & ETA
+                    Cells(i, j).Value = MensajeFinal
+                    MensajeFinal = ""
+                    
+                ElseIf RazonStock = 3 Then
+                    
+                    NombreProveedor = InputBox("A que proveedor le hemos realizado el pago", "NombreProveedor")
+                    CantidadInvoice = InputBox("Cuantas unidades llegaran?", "CantidadInvoice")
+                    NumeroInvoice = InputBox("Inserta Numero de Invoice XXXXXX", "NumeroInvoice")
+                    FechaPago = InputBox("Desde que fecha se ha gestionado el pago?", "FechaPago")
+                    MensajeFinal = "No hay stock" & vbCrLf & vbCrLf & "En proceso de pago por Contabilidad: " & vbCrLf & "Proveedor: " & NombreProveedor & vbCrLf & "Desde el: " & FechaPago & vbCrLf & "Invoice: " & NumeroInvoice
+                    Cells(i, j).Value = MensajeFinal
+                    MensajeFinal = ""
+                
+                ElseIf RazonStock = 4 Then
+                
+                    NombreProveedor = InputBox("Con que proveedor se tiene Anexo y Contrato de compra", "NombreProveedor")
+                    FechaEspecificacion = InputBox("En que fecha se ha creado esta Especificacion / Anexo?", "FechaEspecificacion")
+                    NombreContrato = InputBox("Bajo que Contrato se encuentra esta compra?", "NombreContrato")
+                    NombreEspecificacion = InputBox("Bajo que Anexo o Especificacion se encuentra esta compra?", "NombreEspecificacion")
+                    MensajeFinal = "No hay stock" & vbCrLf & vbCrLf & "Pero hemos confirmado la compra a:" & vbCrLf & "Proveedor: " & NombreProveedor & vbCrLf & "Contrato: " & NombreContrato & vbCrLf & "Especificacion: " & NombreEspecificacion & vbCrLf & "Desde el: " & FechaEspecificacion
+                    Cells(i, j).Value = MensajeFinal
+                    MensajeFinal = ""
+                              
+                
+                ElseIf RazonStock = 5 Then
+                    
+                    NombreProveedor = InputBox("A que proveedor le hemos confirmado la compra", "NombreProveedor")
+                    FechaConfirmacion = InputBox("En que fecha le hemos confirmado al proveedor?", "FechaConfirmacion")
+                    MensajeFinal = "No hay stock" & vbCrLf & vbCrLf & "Hemos confirmado la compra, pero aun no nos envian Anexo o Contrato" & vbCrLf & "Proveedor: " & NombreProveedor & vbCrLf & "Desde el: " & FechaConfirmacion
+                    Cells(i, j).Value = MensajeFinal
+                    MensajeFinal = ""
+                
+                ElseIf RazonStock = 6 Then
+                    
+                    MensajeFinal = "No hay stock" & vbCrLf & vbCrLf & "Aun se encuentra en cotizaciones con proveedores, no se ha definido la compra"
+                    Cells(i, j).Value = MensajeFinal
+                    MensajeFinal = ""
+                                 
+                ElseIf RazonStock = 7 Then
+                    
+                    StockCuarentena = InputBox("Cuantas unidades hay en el almacen Cuarentena?", "StockCuarentena")
+                    MensajeFinal = "Tenemos Stock: " & vbCrLf & StockCuarentena & " unidades en almacen Cuarentena"
+                    Cells(i, j).Value = MensajeFinal
+                    MensajeFinal = ""
+                                
+                End If
+                
+            Case vbCancel
+                MsgBox "Fin del procedimiento", vbCritical, "Final"
+                Exit Sub
+            
+            End Select
+            
+    Next i
+        
+End Sub
+
