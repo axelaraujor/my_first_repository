@@ -1,3 +1,6 @@
+'## Esta primera macro era un primer intento para completar el reporte de Stock Servible por cada UFA para las aeronaves BK
+'Esta macro cumplia y me ayudo a mejorar mi primer tiempo, pero igual era muy lento, por esto ya esta fuera de servicio.
+
 Sub APrimeraAplicacion()
 
 Dim i As Integer

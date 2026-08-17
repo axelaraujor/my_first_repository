@@ -1,3 +1,6 @@
+'## Segun lo que veo a primera vista, esta es una macro para Automatizar el Reportaje del Stock de la Flota MI, dado que incluye
+' las UFAS de Kiteni, Malvinas y Nuevo Mundo, falta mejorar y aplicarlo a Helisur
+
 Sub AQuintaAplicacion()
 
 Dim i As Integer

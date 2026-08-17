@@ -415,10 +415,10 @@ CONCATENATEX(
             FILTER(
                 '17. Excel Compartido de Salus (2025-2026)',
                 '17. Excel Compartido de Salus (2025-2026)'[Part Number] = NroParteActual && 
-                NOT ISBLANK('17. Excel Compartido de Salus (2025-2026)'[Situation on Peru]) &&
-                '17. Excel Compartido de Salus (2025-2026)'[Situation on Peru] <> ""
+                NOT ISBLANK('17. Excel Compartido de Salus (2025-2026)'[Status]) &&
+                '17. Excel Compartido de Salus (2025-2026)'[Status] <> ""
             ),
-            "TextoUnico", '17. Excel Compartido de Salus (2025-2026)'[Situation on Peru]
+            "TextoUnico", '17. Excel Compartido de Salus (2025-2026)'[Status]
         )
     ),
     [TextoUnico],
