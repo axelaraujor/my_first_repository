@@ -1,0 +1,5 @@
+las convenciones para esta carpeta son las siguientes:
+
+# -> primera linea de toda la nota
+## -> codigo el cual procede a utilizarse en el Power BI de la organizacion
+### -> codigo el cual NO PROCEDE a utilizarse en el Power BI de la organizacion (y por lo tanto se tiene que eliminar)

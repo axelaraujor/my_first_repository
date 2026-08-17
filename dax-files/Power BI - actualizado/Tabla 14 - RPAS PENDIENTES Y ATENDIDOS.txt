@@ -1,0 +1,134 @@
+# en este block de notas se pondra todo el codigo relacionado con el Power BI
+
+TABLA 14. RPAS PENDIENTES Y ATENDIDOS
+
+## 01. CodigoRequerimiento y CantidadSolicitada = '14. ConsolidadoRPAs'[codigoRequerimiento] & " (" & '14. ConsolidadoRPAs'[cantidadSolicitada] & " " & '14. ConsolidadoRPAs'[unidadMedida] & ")"
+
+## 02. ¿Es un RPA Pendiente de Compra? = 
+-- 1era Condicion
+IF('14. ConsolidadoRPAs'[situacionRQ] = "PENDIENTE COMPRAS",
+    -- 2da Condicion
+    IF('14. ConsolidadoRPAs'[Origen] = "n.1. TOTAL - Situacion de Requerimientos Pendientes",
+        --3era Condicion
+        IF('14. ConsolidadoRPAs'[nombreEstado] = "Anulado",
+            "No",
+            "Si"),
+        "No"),
+"No")
+
+## 03. CodigoRequerimiento y CantidadSolicitada (si es RPA Pendiente de Compra) = 
+IF('14. ConsolidadoRPAs'[02. ¿Es un RPA Pendiente de Compra?] = "Si", '14. ConsolidadoRPAs'[01. CodigoRequerimiento y CantidadSolicitada], BLANK())
+
+## 04. Cantidad Pendiente de Compra (Por RPA) = 
+-- 1. Captura de variables de fila / contexto actual
+VAR RPA_Actual = '14. ConsolidadoRPAs'[codigoRequerimiento]
+VAR Parte_Actual = '14. ConsolidadoRPAs'[codigoArticulo]
+VAR Solicitado = '14. ConsolidadoRPAs'[cantidadSolicitada]
+
+-- 2. Integración de Medida 02/08: Cantidad Atendida bajo OC (Por RPA)
+VAR Cantidad_OC = 
+    CALCULATE(
+        SUMX(
+            '14. ConsolidadoRPAs',
+            IF(
+                '14. ConsolidadoRPAs'[cantidadOC] > 0 && '14. ConsolidadoRPAs'[situacionRQ] <> "PENDIENTE COMPRAS",
+                '14. ConsolidadoRPAs'[cantidadOC] * '14. ConsolidadoRPAs'[equivalenteCompra],
+                BLANK()
+            )
+        ),
+        ALL('14. ConsolidadoRPAs'),
+        '14. ConsolidadoRPAs'[codigoRequerimiento] = RPA_Actual,
+        '14. ConsolidadoRPAs'[codigoArticulo] = Parte_Actual
+    )
+
+-- 3. Integración de Medida 09: Cantidad Pendiente de Compra (Por línea de RPA)
+VAR Cantidad_Pendiente_Linea = 
+    IF(
+        '14. ConsolidadoRPAs'[nombreEstado] <> "Anulado" && 
+        '14. ConsolidadoRPAs'[situacionRQ] <> "COMPRA DESESTIMADA",
+        
+        IF(
+            '14. ConsolidadoRPAs'[Origen] = "n.1. TOTAL - Situacion de Requerimientos Pendientes",
+            
+            SWITCH(
+                TRUE(),
+                '14. ConsolidadoRPAs'[situacionRQ] = "PENDIENTE COMPRAS", 
+                Solicitado,
+                
+                '14. ConsolidadoRPAs'[cantidadOC] < Solicitado && '14. ConsolidadoRPAs'[cantidadOC] <> 0, 
+                Solicitado - '14. ConsolidadoRPAs'[cantidadOC],
+                
+                BLANK()
+            ),
+            BLANK()
+        ),
+        BLANK()
+    )
+
+-- 4. Evaluación final de la Medida 03
+RETURN
+IF(
+    -- CONDICIÓN 1: Filtros de exclusión básicos (Anulado o Desestimado quedan fuera)
+    '14. ConsolidadoRPAs'[nombreEstado] <> "Anulado" && 
+    '14. ConsolidadoRPAs'[situacionRQ] <> "COMPRA DESESTIMADA",
+    
+    IF(
+        -- CONDICIÓN 2: Filtro de Origen específico
+        '14. ConsolidadoRPAs'[Origen] = "n.1. TOTAL - Situacion de Requerimientos Pendientes",
+        
+        IF(
+            -- CONDICIÓN 3: Si es PENDIENTE COMPRAS
+            '14. ConsolidadoRPAs'[situacionRQ] = "PENDIENTE COMPRAS",
+            Cantidad_Pendiente_Linea, 
+            
+            -- CONDICIÓN 4: Otros estados (Si NO es Pendiente Compras)
+            IF(
+                -- Debe haber una gestión mayor a 0 Y un saldo pendiente
+                Cantidad_OC > 0 && Cantidad_OC < Solicitado,
+                Solicitado - Cantidad_OC, 
+                BLANK()                   
+            )
+        ),
+        BLANK() -- Origen no corresponde
+    ),
+    BLANK() -- Estado Anulado/Desestimado
+)
+
+## 05. Cantidad Atendida bajo OC (Por RPA) = 
+-- 1. Capturamos los valores de la fila actual para usarlos como filtro
+VAR RPA_Actual = '14. ConsolidadoRPAs'[codigoRequerimiento]
+VAR Parte_Actual = '14. ConsolidadoRPAs'[codigoArticulo]
+
+-- 2. Calculamos la suma integrando la condición de la medida 08
+VAR Total_Atendido_Parte = 
+    CALCULATE(
+        SUMX(
+            '14. ConsolidadoRPAs',
+            IF(
+                '14. ConsolidadoRPAs'[cantidadOC] > 0 && '14. ConsolidadoRPAs'[situacionRQ] <> "PENDIENTE COMPRAS",
+                '14. ConsolidadoRPAs'[cantidadOC] * '14. ConsolidadoRPAs'[equivalenteCompra],
+                BLANK()
+            )
+        ),
+        ALL('14. ConsolidadoRPAs'),
+        '14. ConsolidadoRPAs'[codigoRequerimiento] = RPA_Actual,
+        '14. ConsolidadoRPAs'[codigoArticulo] = Parte_Actual
+    )
+
+RETURN
+Total_Atendido_Parte
+
+## 06. CodigoRequerimiento y Cantidad Pendiente de Compra (Por RPA) = 
+    IF('14. ConsolidadoRPAs'[04. Cantidad Pendiente de Compra (Por RPA)] = BLANK(), 
+        BLANK(),
+        '14. ConsolidadoRPAs'[codigoRequerimiento] & " (" & '14. ConsolidadoRPAs'[04. Cantidad Pendiente de Compra (Por RPA)] & " / " & '14. ConsolidadoRPAs'[cantidadSolicitada] & " " & '14. ConsolidadoRPAs'[unidadMedida] & ")")
+
+## 07. CodigoRequerimiento y Cantidad Atendida bajo OC (Por RPA) = 
+    IF('14. ConsolidadoRPAs'[05. Cantidad Atendida bajo OC (Por RPA)] = BLANK(), 
+        BLANK(),
+        '14. ConsolidadoRPAs'[codigoRequerimiento] & " (" & '14. ConsolidadoRPAs'[05. Cantidad Atendida bajo OC (Por RPA)] & " / " & '14. ConsolidadoRPAs'[cantidadSolicitada] & " " & '14. ConsolidadoRPAs'[unidadMedida] & ")")
+
+## 08. CodigoOC y Cantidad Abastecida por OC (Por RPA) = 
+    IF('14. ConsolidadoRPAs'[05. Cantidad Atendida bajo OC (Por RPA)] = BLANK(), 
+        BLANK(),
+        "OC" & '14. ConsolidadoRPAs'[numOC] & " (" & '14. ConsolidadoRPAs'[05. Cantidad Atendida bajo OC (Por RPA)] & " " & '14. ConsolidadoRPAs'[unidadMedida] & ")")

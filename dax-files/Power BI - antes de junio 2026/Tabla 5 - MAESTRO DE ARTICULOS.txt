@@ -1,0 +1,515 @@
+# en este block de notas se pondra todo el codigo relacionado con el Power BI
+
+TABLA 5. MAESTRO DE ARTICULOS
+
+## 01. Key_Condicion_De_Compra = '00. DAX - MedidasDeStock'[18. Condicion de Compra (Contando Intercambiables)]
+
+## 02. Key_Cobertura_De_Stock = 
+VAR CoberturaStock = SUBSTITUTE('00. DAX - MedidasDeStock'[17.2. Cobertura de Stock (contando Intercambiables, en base a PlanMGA y StockMinimoV3)], "?", "0")
+VAR ValorNumerico = VALUE(CoberturaStock)
+RETURN
+    ValorNumerico
+
+## 03. StockMinimoV3 = '00. DAX - MedidasDeStock'[74.1. StockMinimo - ModuloV3]
+
+## 04. EstadoStockMinimoV3 = IF(ISBLANK('05. MaestroDeMateriales_2025'[03. StockMinimoV3]), "En Blanco", "Con Datos")
+
+## 05. PlanAnual2025 = '00. DAX - MedidasDeStock'[65. ¿PlanAnual2025MGA?]
+
+## 06. EstadoPlanAnual2025 = IF(ISBLANK('05. MaestroDeMateriales_2025'[05. PlanAnual2025]), "En Blanco", "Con Datos")
+
+## 07. ¿FueSolicitadoPorRPA? = 
+IF(
+    CONTAINS(
+        '14. RPAs Pendientes / Atendidos', 
+        '14. RPAs Pendientes / Atendidos'[codigoArticulo], 
+        '05. MaestroDeMateriales_2025'[Key_NroParte]
+    ), 
+    "Si", 
+    "No"
+)
+
+### 08. ¿FueSolicitadoPorRPAyEstaDentroDePlaneamiento? = 
+LOOKUPVALUE(
+    '14. RPAs Pendientes / Atendidos'[D. ¿El NroParte se encuentra en Planeamiento?],   -- 1. La columna que quieres traer
+    '14. RPAs Pendientes / Atendidos'[codigoArticulo],            -- 2. La columna de búsqueda en la otra tabla
+    '05. MaestroDeMateriales_2025'[Key_NroParte]                         -- 3. La columna de valor actual en tu Maestro
+)
+
+### 09. RPA's EnTotal = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '14. RPAs Pendientes / Atendidos',
+                '14. RPAs Pendientes / Atendidos'[codigoArticulo] = NroParteActual && 
+                NOT ISBLANK('14. RPAs Pendientes / Atendidos'[E. CodigoRequerimiento y CantidadSolicitada]) &&
+                '14. RPAs Pendientes / Atendidos'[E. CodigoRequerimiento y CantidadSolicitada] <> ""
+            ),
+            "TextoUnico", '14. RPAs Pendientes / Atendidos'[E. CodigoRequerimiento y CantidadSolicitada]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+### 10. Cantidad_RPAs_Concatenados = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+COUNTROWS(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '14. RPAs Pendientes / Atendidos',
+                '14. RPAs Pendientes / Atendidos'[codigoArticulo] = NroParteActual && 
+                NOT ISBLANK('14. RPAs Pendientes / Atendidos'[E. CodigoRequerimiento y CantidadSolicitada]) &&
+                '14. RPAs Pendientes / Atendidos'[E. CodigoRequerimiento y CantidadSolicitada] <> ""
+            ),
+            "CodigoUnico", '14. RPAs Pendientes / Atendidos'[E. CodigoRequerimiento y CantidadSolicitada]
+        )
+    )
+)
+
+## 11. RPA's y cantidades Pendientes de Compra (Por RPA) en Total = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '14. RPAs Pendientes / Atendidos',
+                '14. RPAs Pendientes / Atendidos'[codigoArticulo] = NroParteActual && 
+                NOT ISBLANK('14. RPAs Pendientes / Atendidos'[F.3. CodigoRequerimiento y Cantidad Pendiente de Compra (Por RPA)]) &&
+                '14. RPAs Pendientes / Atendidos'[F.3. CodigoRequerimiento y Cantidad Pendiente de Compra (Por RPA)] <> ""
+            ),
+            "TextoUnico", '14. RPAs Pendientes / Atendidos'[F.3. CodigoRequerimiento y Cantidad Pendiente de Compra (Por RPA)]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+## 12. Cantidad_RPAsPendientes_DeCompra(porRPA)_Concatenados = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+COUNTROWS(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '14. RPAs Pendientes / Atendidos',
+                '14. RPAs Pendientes / Atendidos'[codigoArticulo] = NroParteActual && 
+                NOT ISBLANK('14. RPAs Pendientes / Atendidos'[F.3. CodigoRequerimiento y Cantidad Pendiente de Compra (Por RPA)]) &&
+                '14. RPAs Pendientes / Atendidos'[F.3. CodigoRequerimiento y Cantidad Pendiente de Compra (Por RPA)] <> ""
+            ),
+            "CodigoUnico", '14. RPAs Pendientes / Atendidos'[F.3. CodigoRequerimiento y Cantidad Pendiente de Compra (Por RPA)]
+        )
+    )
+)
+
+## 13. RPA's y Cantidades Abastecidas con OC (Por RPA) En Total = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '14. RPAs Pendientes / Atendidos',
+                '14. RPAs Pendientes / Atendidos'[codigoArticulo] = NroParteActual && 
+                NOT ISBLANK('14. RPAs Pendientes / Atendidos'[F.2. CodigoRequerimiento y Cantidad Atendida bajo OC (Por RPA)]) &&
+                '14. RPAs Pendientes / Atendidos'[F.2. CodigoRequerimiento y Cantidad Atendida bajo OC (Por RPA)] <> ""
+            ),
+            "TextoUnico", '14. RPAs Pendientes / Atendidos'[F.2. CodigoRequerimiento y Cantidad Atendida bajo OC (Por RPA)]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+## 14. Cantidad_RPAsAbastecidos_PorOC(PorRPA)_Concatenados = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+COUNTROWS(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '14. RPAs Pendientes / Atendidos',
+                '14. RPAs Pendientes / Atendidos'[codigoArticulo] = NroParteActual && 
+                NOT ISBLANK('14. RPAs Pendientes / Atendidos'[F.2. CodigoRequerimiento y Cantidad Atendida bajo OC (Por RPA)]) &&
+                '14. RPAs Pendientes / Atendidos'[F.2. CodigoRequerimiento y Cantidad Atendida bajo OC (Por RPA)] <> ""
+            ),
+            "CodigoUnico", '14. RPAs Pendientes / Atendidos'[F.2. CodigoRequerimiento y Cantidad Atendida bajo OC (Por RPA)]
+        )
+    )
+)
+
+## 15. ¿Forma parte del ListadoEspecial (NrosDeParte)? = 
+IF('05. MaestroDeMateriales_2025'[Key_NroParte] = RELATED('16. ListadoEspecial_NroParte'[numero_parte]), "Si", "No")
+
+## 16. Lista_Partes_Intercambiables_SAP = 
+-- 1. Capturamos el NroParte de la fila actual donde estamos parados
+VAR ParteFilaActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+
+-- 2. Buscamos el ID del grupo para esa parte específica
+VAR GrupoActual = 
+    LOOKUPVALUE(
+        '12.2. TablaMapeoIntercambiables - SAP'[ÍndiceGrupoAlternativos],
+        '12.2. TablaMapeoIntercambiables - SAP'[NroParte],
+        ParteFilaActual
+    )
+
+-- 3. Obtenemos todas las partes que pertenecen a ese ID de grupo
+VAR TablaPartesDelGrupo = 
+    CALCULATETABLE(
+        VALUES('12.2. TablaMapeoIntercambiables - SAP'[NroParte]),
+        '12.2. TablaMapeoIntercambiables - SAP'[ÍndiceGrupoAlternativos] = GrupoActual,
+        ALL('03. InventarioActual - ReporteDeLogistica') -- Limpiamos filtros para ver todo el grupo
+    )
+
+-- 4. Quitamos la parte de la fila actual de la lista de resultados
+VAR SoloAlternativas = 
+    EXCEPT(
+        TablaPartesDelGrupo, 
+        { ParteFilaActual } 
+    )
+
+RETURN
+IF(
+    ISBLANK(GrupoActual), 
+    BLANK(), 
+    CONCATENATEX(
+        SoloAlternativas, 
+        '12.2. TablaMapeoIntercambiables - SAP'[NroParte], 
+        UNICHAR(10), -- Puedes cambiarlo por UNICHAR(10) si quieres saltos de línea
+        '12.2. TablaMapeoIntercambiables - SAP'[NroParte], ASC
+    )
+)
+
+## 17. AeronavesDondeSeUtiliza_SegunMGA = 
+-- 1. Capturamos la descripción de la fila actual (Inspección Completa)
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+
+-- 2. Creamos una tabla virtual con todas las aeronaves asociadas a esa inspección específica
+-- NOTA: Ajusta el nombre de la tabla de mapeo según la tengas en tu modelo
+VAR TablaAeronaves = 
+    CALCULATETABLE(
+        VALUES('08.1. PatronDeInspecciones - MGA'[Aeronave]),
+        '08.1. PatronDeInspecciones - MGA'[NroParte] = NroParteActual,
+        ALL('08.1. PatronDeInspecciones - MGA') -- Limpiamos filtros para obtener la lista completa
+    )
+
+RETURN
+-- 3. Concatenamos las matrículas de las aeronaves encontradas
+IF(
+    ISBLANK(NroParteActual), 
+    "Sin descripción", 
+    COALESCE(
+        CONCATENATEX(
+            TablaAeronaves, 
+            '08.1. PatronDeInspecciones - MGA'[Aeronave], 
+            ", ", -- Separador
+            '08.1. PatronDeInspecciones - MGA'[Aeronave], ASC
+        ),
+        "No hay aeronaves mapeadas"
+    )
+)
+
+## 18. AeronavesDondeSeUtiliza_SegunSAP = 
+-- 1. Capturamos la descripción de la fila actual (Inspección Completa)
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+
+-- 2. Creamos una tabla virtual con todas las aeronaves asociadas a esa inspección específica
+-- NOTA: Ajusta el nombre de la tabla de mapeo según la tengas en tu modelo
+VAR TablaAeronaves = 
+    CALCULATETABLE(
+        VALUES('08.2. PatronDeInspecciones - SAP'[Aeronave]),
+        '08.2. PatronDeInspecciones - SAP'[NroParte] = NroParteActual,
+        ALL('08.2. PatronDeInspecciones - SAP') -- Limpiamos filtros para obtener la lista completa
+    )
+
+RETURN
+-- 3. Concatenamos las matrículas de las aeronaves encontradas
+IF(
+    ISBLANK(NroParteActual), 
+    "Sin descripción", 
+    COALESCE(
+        CONCATENATEX(
+            TablaAeronaves, 
+            '08.2. PatronDeInspecciones - SAP'[Aeronave], 
+            ", ", -- Separador
+            '08.2. PatronDeInspecciones - SAP'[Aeronave], ASC
+        ),
+        "No hay aeronaves mapeadas"
+    )
+)
+
+## 19. AeronavesDondeSeUtiliza_SegunStockMinimo = 
+-- 1. Capturamos la descripción de la fila actual (Inspección Completa)
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+
+-- 2. Creamos una tabla virtual con todas las aeronaves asociadas a esa inspección específica
+-- NOTA: Ajusta el nombre de la tabla de mapeo según la tengas en tu modelo
+VAR TablaAeronaves = 
+    CALCULATETABLE(
+        VALUES('10. ReporteStockMinimoConsolidado'[Aeronave]),
+        '10. ReporteStockMinimoConsolidado'[NroParte] = NroParteActual,
+        ALL('10. ReporteStockMinimoConsolidado') -- Limpiamos filtros para obtener la lista completa
+    )
+
+RETURN
+-- 3. Concatenamos las matrículas de las aeronaves encontradas
+IF(
+    ISBLANK(NroParteActual), 
+    "Sin descripción", 
+    COALESCE(
+        CONCATENATEX(
+            TablaAeronaves, 
+            '10. ReporteStockMinimoConsolidado'[Aeronave], 
+            ", ", -- Separador
+            '10. ReporteStockMinimoConsolidado'[Aeronave], ASC
+        ),
+        "No hay aeronaves mapeadas"
+    )
+)
+
+## 20. AeronaveDondeSeUtiliza_SegunMGAyStockMin = 
+VAR MGA = '05. MaestroDeMateriales_2025'[17. AeronavesDondeSeUtiliza_SegunMGA]
+VAR StockMinimo = '05. MaestroDeMateriales_2025'[19. AeronavesDondeSeUtiliza_SegunStockMinimo]
+VAR NoMapeado = "No hay aeronaves mapeadas"
+
+RETURN
+IF (
+    MGA <> NoMapeado, 
+    MGA, 
+    IF (
+        MGA = NoMapeado && StockMinimo = NoMapeado, 
+        NoMapeado, 
+        StockMinimo
+    )
+)
+
+### 21. RPA's de Planeamiento y cantidades Pendientes de Compra (Por RPA) en Total = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '14. RPAs Pendientes / Atendidos',
+                '14. RPAs Pendientes / Atendidos'[codigoArticulo] = NroParteActual && 
+                NOT ISBLANK('14. RPAs Pendientes / Atendidos'[F.1. CodigoRequerimiento y CantidadSolicitada (Por RPA) Si es un RPA de Planeamiento]) &&
+                '14. RPAs Pendientes / Atendidos'[F.1. CodigoRequerimiento y CantidadSolicitada (Por RPA) Si es un RPA de Planeamiento] <> ""
+            ),
+            "TextoUnico", '14. RPAs Pendientes / Atendidos'[F.1. CodigoRequerimiento y CantidadSolicitada (Por RPA) Si es un RPA de Planeamiento]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+### 22. OC's y cantidades marcadas para Compra (Segun OC) en Total = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '14. RPAs Pendientes / Atendidos',
+                '14. RPAs Pendientes / Atendidos'[codigoArticulo] = NroParteActual && 
+                NOT ISBLANK('14. RPAs Pendientes / Atendidos'[K. CodigoOC y Cantidad Abastecida por OC (Por Linea de RPA)]) &&
+                '14. RPAs Pendientes / Atendidos'[K. CodigoOC y Cantidad Abastecida por OC (Por Linea de RPA)] <> ""
+            ),
+            "TextoUnico", '14. RPAs Pendientes / Atendidos'[K. CodigoOC y Cantidad Abastecida por OC (Por Linea de RPA)]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+## 23. Solicitudes de Salus Realizadas = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '17. Excel Compartido de Salus (2025-2026)',
+                '17. Excel Compartido de Salus (2025-2026)'[Part Number] = NroParteActual && 
+                NOT ISBLANK('17. Excel Compartido de Salus (2025-2026)'[Posicion_ExcelCompartidoSalus]) &&
+                '17. Excel Compartido de Salus (2025-2026)'[Posicion_ExcelCompartidoSalus] <> ""
+            ),
+            "TextoUnico", '17. Excel Compartido de Salus (2025-2026)'[Posicion_ExcelCompartidoSalus]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+## 24. RPA's y Solicitudes - Pendientes de Compra (11 y 25) en Total = 
+VAR RpaTotal = [11. RPA's y cantidades Pendientes de Compra (Por RPA) en Total]
+VAR SolicitudesPendientesSalus = [25. Solicitudes de Salus Pendientes En Total]
+
+RETURN
+    IF(
+        ISBLANK(RpaTotal) && ISBLANK(SolicitudesPendientesSalus),
+        BLANK(),
+        IF(
+            NOT(ISBLANK(RpaTotal)) && NOT(ISBLANK(SolicitudesPendientesSalus)),
+            -- Si ambos tienen valor, concatenamos con salto de línea
+            RpaTotal & UNICHAR(10) & SolicitudesPendientesSalus,
+            -- Si solo uno tiene valor, concatenamos ambos (el blanco simplemente no sumará nada)
+            RpaTotal & SolicitudesPendientesSalus
+        )
+    )
+
+25. Solicitudes de Salus Pendientes En Total = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '17. Excel Compartido de Salus (2025-2026)',
+                '17. Excel Compartido de Salus (2025-2026)'[Part Number] = NroParteActual && 
+                NOT ISBLANK('17. Excel Compartido de Salus (2025-2026)'[B. Solicitudes Pendientes por Salus]) &&
+                '17. Excel Compartido de Salus (2025-2026)'[B. Solicitudes Pendientes por Salus] <> ""
+            ),
+            "TextoUnico", '17. Excel Compartido de Salus (2025-2026)'[B. Solicitudes Pendientes por Salus]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+## 26. Solicitudes de Salus Atendidas En Total = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '17. Excel Compartido de Salus (2025-2026)',
+                '17. Excel Compartido de Salus (2025-2026)'[Part Number] = NroParteActual && 
+                NOT ISBLANK('17. Excel Compartido de Salus (2025-2026)'[C. Solicitudes Abastecidas por Salus]) &&
+                '17. Excel Compartido de Salus (2025-2026)'[C. Solicitudes Abastecidas por Salus] <> ""
+            ),
+            "TextoUnico", '17. Excel Compartido de Salus (2025-2026)'[C. Solicitudes Abastecidas por Salus]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+## 27. Invoices de Salus Atendidos en Total = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '17. Excel Compartido de Salus (2025-2026)',
+                '17. Excel Compartido de Salus (2025-2026)'[Part Number] = NroParteActual && 
+                NOT ISBLANK('17. Excel Compartido de Salus (2025-2026)'[Invoice_ExcelCompartidoSalus]) &&
+                '17. Excel Compartido de Salus (2025-2026)'[Invoice_ExcelCompartidoSalus] <> ""
+            ),
+            "TextoUnico", '17. Excel Compartido de Salus (2025-2026)'[Invoice_ExcelCompartidoSalus]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+## 28. RPA's y Solicitudes - Abastecidas con OC (13 y 26) en Total = 
+VAR RpaAbastecidas = [13. RPA's y Cantidades Abastecidas con OC (Por RPA) En Total]
+VAR SolicitudesAtendidas = [26. Solicitudes de Salus Atendidas En Total]
+
+RETURN
+    IF(
+        ISBLANK(RpaAbastecidas) && ISBLANK(SolicitudesAtendidas),
+        BLANK(),
+        IF(
+            NOT(ISBLANK(RpaAbastecidas)) && NOT(ISBLANK(SolicitudesAtendidas)),
+            -- Si ambos tienen datos, ponemos el salto de línea en medio
+            RpaAbastecidas & UNICHAR(10) & SolicitudesAtendidas,
+            -- Si uno está vacío, simplemente los unimos (el vacío no aporta texto ni espacio)
+            RpaAbastecidas & SolicitudesAtendidas
+        )
+    )
+
+## 29. OC's e Invoices de Compra (22 y 27) en Total = 
+VAR OcCantidades = [22. OC's y cantidades marcadas para Compra (Segun OC) en Total]
+VAR InvoicesSalus = [27. Invoices de Salus Atendidos en Total]
+
+RETURN
+    IF(
+        ISBLANK(OcCantidades) && ISBLANK(InvoicesSalus),
+        BLANK(),
+        IF(
+            NOT(ISBLANK(OcCantidades)) && NOT(ISBLANK(InvoicesSalus)),
+            -- Si ambos existen, separamos con salto de línea
+            OcCantidades & UNICHAR(10) & InvoicesSalus,
+            -- Si uno falta, concatenamos directo (el BLANK actúa como vacío)
+            OcCantidades & InvoicesSalus
+        )
+    )
+
+## 30. Status de reposicion - Salus = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '17. Excel Compartido de Salus (2025-2026)',
+                '17. Excel Compartido de Salus (2025-2026)'[Part Number] = NroParteActual && 
+                NOT ISBLANK('17. Excel Compartido de Salus (2025-2026)'[Situation on Peru]) &&
+                '17. Excel Compartido de Salus (2025-2026)'[Situation on Peru] <> ""
+            ),
+            "TextoUnico", '17. Excel Compartido de Salus (2025-2026)'[Situation on Peru]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)
+
+## 31. Ingreso de Mercancia - Salus = 
+VAR NroParteActual = '05. MaestroDeMateriales_2025'[Key_NroParte]
+RETURN
+CONCATENATEX(
+    DISTINCT(
+        SELECTCOLUMNS(
+            FILTER(
+                '17. Excel Compartido de Salus (2025-2026)',
+                '17. Excel Compartido de Salus (2025-2026)'[Part Number] = NroParteActual && 
+                NOT ISBLANK('17. Excel Compartido de Salus (2025-2026)'[SAP Ref#]) &&
+                '17. Excel Compartido de Salus (2025-2026)'[SAP Ref#] <> ""
+            ),
+            "TextoUnico", '17. Excel Compartido de Salus (2025-2026)'[SAP Ref#]
+        )
+    ),
+    [TextoUnico],
+    UNICHAR(10),
+    [TextoUnico],
+    ASC
+)

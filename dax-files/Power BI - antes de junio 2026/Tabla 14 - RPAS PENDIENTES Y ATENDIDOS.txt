@@ -1,0 +1,184 @@
+# en este block de notas se pondra todo el codigo relacionado con el Power BI
+
+TABLA 14. RPAS PENDIENTES Y ATENDIDOS
+
+### A. ¿Es un RPA de Planeamiento? =
+IF(
+    CONTAINS(
+        'RPAsPlaneamiento', 
+        'RPAsPlaneamiento'[codigoRequerimiento], 
+        '14. RPAs Pendientes / Atendidos'[codigoRequerimiento]
+    ), 
+    "Si", 
+    "No"
+)
+
+### C. ¿El NroParte se encuentra en Stock Minimo? = 
+IF(
+    CONTAINS(
+        '10. ReporteStockMinimoConsolidado', 
+        '10. ReporteStockMinimoConsolidado'[NroParte], 
+        '14. RPAs Pendientes / Atendidos'[codigoArticulo]
+    ), 
+    "Si", 
+    "No"
+)
+
+### D. ¿El NroParte se encuentra en Planeamiento? = 
+IF( 
+    '14. RPAs Pendientes / Atendidos'[B. ¿El NroParte se encuentra en Patrones de Inspeccion?] = "No" 
+    && '14. RPAs Pendientes / Atendidos'[C. ¿El NroParte se encuentra en Stock Minimo?] = "No", 
+    "No", 
+    "Si"
+)
+
+## E. CodigoRequerimiento y CantidadSolicitada = '14. RPAs Pendientes / Atendidos'[codigoRequerimiento] & " (" & '14. RPAs Pendientes / Atendidos'[cantidadSolicitada] & " " & '14. RPAs Pendientes / Atendidos'[unidadMedida] & ")"
+
+### F.1. CodigoRequerimiento y CantidadSolicitada (Por RPA) Si es un RPA de Planeamiento = 
+-- 1era Condicion
+IF('14. RPAs Pendientes / Atendidos'[A. ¿Es un RPA de Planeamiento?] = "Si",
+    -- 2da Condicion
+    IF('14. RPAs Pendientes / Atendidos'[Origen] = "n.1. TOTAL - Situacion de Requerimientos Pendientes",
+        --3era Condicion
+        IF('14. RPAs Pendientes / Atendidos'[nombreEstado] = "Anulado",
+            BLANK(),
+            '14. RPAs Pendientes / Atendidos'[E. CodigoRequerimiento y CantidadSolicitada]),
+        BLANK()),
+BLANK())
+
+## F.2. CodigoRequerimiento y Cantidad Atendida bajo OC (Por RPA) = 
+    IF('14. RPAs Pendientes / Atendidos'[J.1. Cantidad Atendida bajo OC (Por RPA)] = BLANK(), 
+        BLANK(),
+        '14. RPAs Pendientes / Atendidos'[codigoRequerimiento] & " (" & '14. RPAs Pendientes / Atendidos'[J.1. Cantidad Atendida bajo OC (Por RPA)] & " / " & '14. RPAs Pendientes / Atendidos'[cantidadSolicitada] & " " & '14. RPAs Pendientes / Atendidos'[unidadMedida] & ")")
+
+## F.3. CodigoRequerimiento y Cantidad Pendiente de Compra (Por RPA) = 
+    IF('14. RPAs Pendientes / Atendidos'[J.2. Cantidad Pendiente de Compra (Por RPA)] = BLANK(), 
+        BLANK(),
+        '14. RPAs Pendientes / Atendidos'[codigoRequerimiento] & " (" & '14. RPAs Pendientes / Atendidos'[J.2. Cantidad Pendiente de Compra (Por RPA)] & " / " & '14. RPAs Pendientes / Atendidos'[cantidadSolicitada] & " " & '14. RPAs Pendientes / Atendidos'[unidadMedida] & ")")
+
+## G. ¿Es un RPA Pendiente de Compra? = 
+-- 1era Condicion
+IF('14. RPAs Pendientes / Atendidos'[situacionRQ] = "PENDIENTE COMPRAS",
+    -- 2da Condicion
+    IF('14. RPAs Pendientes / Atendidos'[Origen] = "n.1. TOTAL - Situacion de Requerimientos Pendientes",
+        --3era Condicion
+        IF('14. RPAs Pendientes / Atendidos'[nombreEstado] = "Anulado",
+            "No",
+            "Si"),
+        "No"),
+"No")
+
+## H. CodigoRequerimiento y CantidadSolicitada (si es RPA Pendiente de Compra) = 
+IF('14. RPAs Pendientes / Atendidos'[G. ¿Es un RPA Pendiente de Compra?] = "Si", '14. RPAs Pendientes / Atendidos'[E. CodigoRequerimiento y CantidadSolicitada], BLANK())
+
+### I.1. Cantidad Atendida bajo OC (Por linea de RPA) = 
+    IF( AND( '14. RPAs Pendientes / Atendidos'[cantidadOC] > 0, '14. RPAs Pendientes / Atendidos'[situacionRQ] <> "PENDIENTE COMPRAS"),
+    '14. RPAs Pendientes / Atendidos'[cantidadOC] * '14. RPAs Pendientes / Atendidos'[equivalenteCompra],
+    BLANK())
+
+### I.2. Cantidad Pendiente de Compra (Por linea de RPA) = 
+-- 1. Definimos las variables para que el código sea limpio
+VAR Estado = '14. RPAs Pendientes / Atendidos'[nombreEstado]
+VAR Situacion = '14. RPAs Pendientes / Atendidos'[situacionRQ]
+VAR Origen = '14. RPAs Pendientes / Atendidos'[Origen]
+VAR CantGestionada = '14. RPAs Pendientes / Atendidos'[I.1. Cantidad Atendida bajo OC (Por linea de RPA)]
+VAR CantOC = '14. RPAs Pendientes / Atendidos'[cantidadOC]
+VAR CantSolicitada = '14. RPAs Pendientes / Atendidos'[cantidadSolicitada]
+
+RETURN
+IF(
+    -- PASO 1: Filtro de exclusión (Estado y Desestimados)
+    Estado <> "Anulado" && Situacion <> "COMPRA DESESTIMADA",
+    
+    IF(
+        -- PASO 2: Filtro por Origen específico
+        Origen = "n.1. TOTAL - Situacion de Requerimientos Pendientes",
+        
+        -- PASO 3 y 4: Evaluación de resultados
+        SWITCH(
+            TRUE(),
+            -- 3.1: Si es Pendiente Compras, devolvemos la cantidad gestionada
+            Situacion = "PENDIENTE COMPRAS", CantSolicitada,
+            
+            -- 4: Si no es Pendiente Compras, evaluamos la compra parcial
+            -- Condición: Pendiente < Solicitado Y Pendiente es diferente de 0
+            CantOC < CantSolicitada && CantOC <> 0, CantSolicitada - CantOC,
+            
+            -- Si no cumple ninguna de las anteriores (Caso contrario)
+            BLANK()
+        ),
+        
+        -- Falló Paso 2 (Origen incorrecto)
+        BLANK()
+    ),
+    
+    -- Falló Paso 1 (Es Anulado o Desestimado)
+    BLANK()
+)
+
+## J.1. Cantidad Atendida bajo OC (Por RPA) = 
+-- 1. Capturamos los valores de la fila actual para usarlos como filtro
+VAR RPA_Actual = '14. RPAs Pendientes / Atendidos'[codigoRequerimiento]
+VAR Parte_Actual = '14. RPAs Pendientes / Atendidos'[codigoArticulo]
+
+-- 2. Calculamos la suma de TODAS las cantidades OC para este RPA y este N° de Parte
+VAR Total_Atendido_Parte = 
+    CALCULATE(
+        SUM('14. RPAs Pendientes / Atendidos'[I.1. Cantidad Atendida bajo OC (Por linea de RPA)]),
+        ALL('14. RPAs Pendientes / Atendidos'), -- Limpiamos filtros para buscar en toda la tabla
+        '14. RPAs Pendientes / Atendidos'[codigoRequerimiento] = RPA_Actual,
+        '14. RPAs Pendientes / Atendidos'[codigoArticulo] = Parte_Actual
+    )
+
+-- 3. Retornamos directamente el cálculo
+RETURN
+Total_Atendido_Parte
+
+## J.2. Cantidad Pendiente de Compra (Por RPA) = 
+-- 1. Captura de variables de fila
+VAR RPA_Actual = '14. RPAs Pendientes / Atendidos'[codigoRequerimiento]
+VAR Parte_Actual = '14. RPAs Pendientes / Atendidos'[codigoArticulo]
+VAR Solicitado = '14. RPAs Pendientes / Atendidos'[cantidadSolicitada]
+VAR Cantidad_OC = '14. RPAs Pendientes / Atendidos'[J.1. Cantidad Atendida bajo OC (Por RPA)]
+
+-- 2. Cálculo del Atendido Total (Agrupado por RPA y NroParte)
+VAR Total_Atendido_Parte = 
+    CALCULATE(
+        SUM('14. RPAs Pendientes / Atendidos'[I.1. Cantidad Atendida bajo OC (Por linea de RPA)]),
+        ALL('14. RPAs Pendientes / Atendidos'),
+        '14. RPAs Pendientes / Atendidos'[codigoRequerimiento] = RPA_Actual,
+        '14. RPAs Pendientes / Atendidos'[codigoArticulo] = Parte_Actual
+    )
+
+RETURN
+IF(
+    -- CONDICIÓN 1: Filtros de exclusión básicos (Anulado o Desestimado quedan fuera)
+    '14. RPAs Pendientes / Atendidos'[nombreEstado] <> "Anulado" && 
+    '14. RPAs Pendientes / Atendidos'[situacionRQ] <> "COMPRA DESESTIMADA",
+    
+    IF(
+        -- CONDICIÓN 2: Filtro de Origen específico
+        '14. RPAs Pendientes / Atendidos'[Origen] = "n.1. TOTAL - Situacion de Requerimientos Pendientes",
+        
+        IF(
+            -- CONDICIÓN 3: Si es PENDIENTE COMPRAS
+            '14. RPAs Pendientes / Atendidos'[situacionRQ] = "PENDIENTE COMPRAS",
+            '14. RPAs Pendientes / Atendidos'[I.2. Cantidad Pendiente de Compra (Por linea de RPA)], 
+            
+            -- CONDICIÓN 4: Otros estados (Si NO es Pendiente Compras)
+            IF(
+                -- Debe haber una gestión mayor a 0 Y un saldo pendiente
+                Cantidad_OC > 0 && Cantidad_OC < Solicitado,
+                Solicitado - Cantidad_OC, 
+                BLANK()                   
+            )
+        ),
+        BLANK() -- Origen no corresponde
+    ),
+    BLANK() -- Estado Anulado/Desestimado
+)
+
+### K. CodigoOC y Cantidad Abastecida por OC (Por Linea de RPA) = 
+    IF('14. RPAs Pendientes / Atendidos'[I.1. Cantidad Atendida bajo OC (Por linea de RPA)] = BLANK(), 
+        BLANK(),
+        "OC" & '14. RPAs Pendientes / Atendidos'[numOC] & " (" & '14. RPAs Pendientes / Atendidos'[I.1. Cantidad Atendida bajo OC (Por linea de RPA)] & " " & '14. RPAs Pendientes / Atendidos'[unidadMedida] & ")")
